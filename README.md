@@ -1,78 +1,14 @@
+# M21 rebuild profile
 
-<h1 align="center">
-  <br>
-  <img src="https://i.ibb.co/LYYJzJC/logo.jpg" alt="Markdownify" width="2048">
-  <br>
-  GrassKernel
-  <br>
-</h1>
+Target: Samsung Galaxy M21 / SM-M215F.
 
-<h4 align="center">A custom kernel for the Exynos9611 devices.</h4>
+Build defaults:
+- Device: `m21`
+- ROM: `oneui`
+- KernelSU: enabled
+- SELinux: enforcing
+- Optional compatibility fragment: `arch/arm64/configs/vendor/m21_compat.config`
 
-<p align="center">
-  <a href="#key-features">Key Features</a> •
-  <a href="#how-to-build">How To Build</a> •
-  <a href="#how-to-flash">How To Flash</a> •
-  <a href="#credits">Credits</a>
-</p>
+The build patch applies the fragment with the kernel `merge_config.sh` flow, then runs `olddefconfig` and prints the resulting module-related symbols from `out/.config`. The GitHub Actions workflow repeats the final check so the log proves which settings actually reached the generated kernel config.
 
-## Key Features
-
-* Disable Samsung securities, debug drivers, etc modifications
-* Checkout and rebase against Android common kernel source, Removing Samsung additions to drivers like ext4,f2fs and more
-* Compiled with bleeding edge Neutron Clang 17, with full LLVM binutils, LTO (Link time optimization) and -O3  
-* Import Erofs, Incremental FS, BinderFS and several backports.
-* Supports DeX touchpad for corresponding OneUI ports that have DeX ported.
-* Lot of debug codes/configuration Samsung added are removed.
-* Added [wireguard](https://www.wireguard.com/) driver, an open-source VPN driver in-kernel
-* Added [KernelSU](https://kernelsu.org/)
-
-## How To Build
-
-You will need ubuntu, git, around 8GB RAM and bla-bla-bla...
-
-```bash
-# Install dependencies
-$ sudo apt install -y bash git make libssl-dev curl bc pkg-config m4 libtool automake autoconf
-
-# Clone this repository
-$ git clone https://github.com/Gojikovi/kernel_samsung_universal9611
-
-# Go into the repository
-$ cd kernel_samsung_universal9611
-
-# Install toolchain
-# You could try any clang/LLVM based toolchain, however I use neutron clang
-# If you are using Arch or distro with latest glibc, You may want to use antman instead.
-$ bash <(curl https://gist.githubusercontent.com/roynatech2544/0feeeb35a6d1782b186990ff2a0b3657/raw/b170134a94dac3594df506716bc7b802add2724b/setup.sh)
-
-# If you want to compile the kernel not for A51 then export DEVICE variable to m21, m31, m31s, f41
-# Build the kernel
-$ ROM=aosp ./build_kernel.sh # (for AOSP)
-$ ROM=oneui ./build_kernel.sh # (for OneUI)
-$ DEVICE=m21 KSU=1 ROM=aosp ./build_kernel.sh # (for M21, AOSP and ksu)
-
-# if you want to overclock or underclock edit these and add it to arch/arm64/configs/vendor/grass.config
-CONFIG_ARM_MODCLOCK=y
-CONFIG_MAX_FREQ_BIG=2314000
-CONFIG_MIN_FREQ_BIG=936000
-CONFIG_MAX_FREQ_LITTLE=1742000
-CONFIG_MIN_FREQ_LITTLE=403000
-```
-
-
-After build the image of the kernel will be in out/arch/arm64/boot/Image
-
-## How To Flash
-
-After a successful build, you can see the $PWD/kernel_zip/GRASS* archive.
-This is your kernel. Just flash it via TWRP or adb sideload
-
-## Credits
-
-- [roynatech2544](https://github.com/roynatech2544)
-- [Samsung Open Source](https://opensource.samsung.com/)
-- [Android Open Source Project](https://source.android.com/)
-- [The Linux Kernel](https://www.kernel.org/)
-
-
+This verification does not make arbitrary `.ko` files compatible. External modules still need a compatible kernel ABI, architecture, symbols, and other kernel/runtime requirements.
