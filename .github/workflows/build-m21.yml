@@ -1,0 +1,74 @@
+name: Grass M21 Rebuild
+
+on:
+  workflow_dispatch:
+    inputs:
+      module_compat:
+        description: "Enable external-module compatibility profile"
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Install build packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bison flex libssl-dev python3 python-is-python3 \
+            libarchive-tools zip curl
+
+      - name: Setup LLVM toolchain
+        run: |
+          mkdir -p toolchain
+          cd toolchain
+          bash <(curl -fsSL 'https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman') -S=05012024
+          bash <(curl -fsSL 'https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman') --patch=glibc
+
+      - name: Build M21
+        run: |
+          export DEVICE=m21
+          export ROM=oneui
+          export KSU=1
+          export SELINUX=e
+
+          if [ "${{ inputs.module_compat }}" = "true" ]; then
+            export CONFIG_EXTRA=vendor/m21_compat.config
+          else
+            export CONFIG_EXTRA=
+          fi
+
+          bash build_kernel.sh
+
+      - name: Verify M21 config
+        run: |
+          set -euo pipefail
+          test -f out/.config
+
+          echo "=== FINAL M21 CONFIG CHECK ==="
+
+          for sym in CONFIG_MODULES CONFIG_MODVERSIONS CONFIG_MODULE_SIG CONFIG_MODULE_FORCE_LOAD; do
+            if grep -q "^${sym}=" out/.config; then
+              grep "^${sym}=" out/.config
+            elif grep -q "^# ${sym} is not set" out/.config; then
+              grep "^# ${sym} is not set" out/.config
+            else
+              echo "${sym}=NOT_PRESENT"
+            fi
+          done
+
+          echo "=== END FINAL M21 CONFIG CHECK ==="
+
+      - name: Upload kernel ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: GrassKernel_M21_ONEUI_K
